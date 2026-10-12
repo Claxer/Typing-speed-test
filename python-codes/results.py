@@ -1,162 +1,70 @@
-
 import customtkinter as ctk
-from database import (
-    get_history,
-    get_personal_best,
-    get_total_tests,
-    get_average_wpm
-)
+from database import get_statistics, get_history, get_recent_progress
 
 
 class ResultsFrame(ctk.CTkFrame):
     def __init__(self, parent, on_back, on_start):
         super().__init__(parent, fg_color="transparent")
-
         self.on_back = on_back
         self.on_start = on_start
-        self.latest_result = None
+        self.grid_columnconfigure(0, weight=1)
 
-        self.build_interface()
-
-    def build_interface(self):
-        ctk.CTkLabel(
-            self,
-            text="Your Results",
-            font=ctk.CTkFont(size=30, weight="bold")
-        ).pack(anchor="w", padx=30, pady=(25, 5))
-
-        ctk.CTkLabel(
-            self,
-            text="Review your performance and previous typing tests.",
-            text_color="gray"
-        ).pack(anchor="w", padx=30, pady=(0, 20))
-
-        self.latest_frame = ctk.CTkFrame(
-            self, fg_color="#202020", corner_radius=12
+        ctk.CTkLabel(self, text="Your Progress", font=ctk.CTkFont(size=28, weight="bold")).grid(
+            row=0, column=0, sticky="w", padx=24, pady=(20, 16)
         )
-        self.latest_frame.pack(fill="x", padx=30, pady=5)
+        self.cards = ctk.CTkFrame(self, fg_color="transparent")
+        self.cards.grid(row=1, column=0, sticky="ew", padx=18)
+        self.cards.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
-        self.latest_label = ctk.CTkLabel(
-            self.latest_frame,
-            text="Complete a typing test to see your latest results.",
-            font=ctk.CTkFont(size=17),
-            justify="left"
+        self.stat_labels = []
+        for index, (title, value) in enumerate([
+            ("Tests Completed", "0"), ("Personal Best", "0 WPM"),
+            ("Average WPM", "0 WPM"), ("Average Accuracy", "0%")
+        ]):
+            card = ctk.CTkFrame(self.cards, corner_radius=12)
+            card.grid(row=0, column=index, sticky="ew", padx=6, pady=6)
+            ctk.CTkLabel(card, text=title, text_color="gray").pack(pady=(12, 4))
+            label = ctk.CTkLabel(card, text=value, font=ctk.CTkFont(size=21, weight="bold"))
+            label.pack(pady=(0, 12))
+            self.stat_labels.append(label)
+
+        ctk.CTkLabel(self, text="Recent Test History", font=ctk.CTkFont(size=20, weight="bold")).grid(
+            row=2, column=0, sticky="w", padx=24, pady=(22, 8)
         )
-        self.latest_label.pack(anchor="w", padx=20, pady=20)
-
-        summary = ctk.CTkFrame(self, fg_color="transparent")
-        summary.pack(fill="x", padx=25, pady=15)
-
-        self.total_label = self.make_stat(summary, "Total Tests", "0")
-        self.average_label = self.make_stat(summary, "Average WPM", "0")
-        self.best_label = self.make_stat(summary, "Personal Best", "0")
-
-        ctk.CTkLabel(
-            self,
-            text="Typing History",
-            font=ctk.CTkFont(size=21, weight="bold")
-        ).pack(anchor="w", padx=30, pady=(10, 8))
-
-        self.history_box = ctk.CTkTextbox(
-            self,
-            font=ctk.CTkFont(size=13),
-            wrap="none"
-        )
-        self.history_box.pack(
-            fill="both", expand=True, padx=30, pady=5
-        )
+        self.history_box = ctk.CTkTextbox(self, height=260, font=ctk.CTkFont(size=13))
+        self.history_box.grid(row=3, column=0, sticky="nsew", padx=24, pady=(0, 14))
+        self.history_box.configure(state="disabled")
 
         buttons = ctk.CTkFrame(self, fg_color="transparent")
-        buttons.pack(pady=20)
+        buttons.grid(row=4, column=0, sticky="ew", padx=24, pady=(0, 20))
+        ctk.CTkButton(buttons, text="Start Typing Test", command=self.on_start).pack(side="left")
+        ctk.CTkButton(buttons, text="Refresh", command=self.refresh).pack(side="left", padx=10)
+        ctk.CTkButton(buttons, text="Back to Dashboard", command=self.on_back,
+                      fg_color="transparent", border_width=1,
+                      text_color=("gray10", "gray90")).pack(side="right")
+        self.refresh()
 
-        ctk.CTkButton(
-            buttons,
-            text="Start Typing Test",
-            command=self.on_start,
-            width=160
-        ).pack(side="left", padx=8)
+    def refresh(self):
+        stats = get_statistics()
+        values = [
+            str(stats["total_tests"]),
+            f'{stats["personal_best"]:.1f} WPM',
+            f'{stats["average_wpm"]:.1f} WPM',
+            f'{stats["average_accuracy"]:.1f}%'
+        ]
+        for label, value in zip(self.stat_labels, values):
+            label.configure(text=value)
 
-        ctk.CTkButton(
-            buttons,
-            text="Back to Dashboard",
-            command=self.on_back,
-            fg_color="#404040",
-            hover_color="#505050",
-            width=170
-        ).pack(side="left", padx=8)
-
-        self.refresh_history()
-
-    def make_stat(self, parent, title, value):
-        card = ctk.CTkFrame(parent, fg_color="#202020", corner_radius=10)
-        card.pack(side="left", fill="x", expand=True, padx=5)
-
-        ctk.CTkLabel(
-            card,
-            text=title,
-            text_color="gray"
-        ).pack(pady=(12, 3))
-
-        label = ctk.CTkLabel(
-            card,
-            text=value,
-            font=ctk.CTkFont(size=24, weight="bold")
-        )
-        label.pack(pady=(0, 12))
-
-        return label
-
-    def set_latest_result(self, result):
-        self.latest_result = result
-
-        self.latest_label.configure(
-            text=(
-                f"Typing Speed: {result['wpm']:.2f} WPM\n"
-                f"Accuracy: {result['accuracy']:.2f}%\n"
-                f"Mistakes: {result['mistakes']}\n"
-                f"Difficulty: {result['difficulty']}\n"
-                f"Test Duration: {result['duration']} seconds"
-            )
-        )
-
-        self.refresh_history()
-
-    def refresh_history(self):
-        total = get_total_tests()
-        average = get_average_wpm()
-        best = get_personal_best()
-
-        self.total_label.configure(text=str(total))
-        self.average_label.configure(text=str(average))
-        self.best_label.configure(
-            text=f"{best[0]:.2f}" if best else "0"
-        )
-
-        self.history_box.configure(state="normal")
-        self.history_box.delete("1.0", "end")
-
-        self.history_box.insert(
-            "end",
-            f"{'ID':<5} {'WPM':<10} {'Accuracy':<12} "
-            f"{'Mistakes':<10} {'Level':<10} {'Duration':<10} Date\n"
-        )
-        self.history_box.insert("end", "-" * 100 + "\n")
-
-        history = get_history()
-
+        lines = ["DATE / TIME                 LEVEL     TIME      WPM      ACCURACY   ERRORS",
+                 "-" * 76]
+        history = get_history(30)
         if not history:
-            self.history_box.insert(
-                "end", "No typing tests recorded yet.\n"
-            )
+            lines.append("No tests saved yet. Complete a typing test to see your results here.")
         else:
             for row in history:
-                test_id, wpm, accuracy, mistakes, difficulty, duration, date = row
-
-                self.history_box.insert(
-                    "end",
-                    f"{test_id:<5} {wpm:<10.2f} {accuracy:<12.2f} "
-                    f"{mistakes:<10} {difficulty:<10} "
-                    f"{duration:<10} {date}\n"
-                )
-
+                _, date, difficulty, duration, wpm, accuracy, errors = row
+                lines.append(f"{date:<22} {difficulty:<8} {duration:>3}s   {wpm:>6.1f}   {accuracy:>7.1f}%   {errors:>3}")
+        self.history_box.configure(state="normal")
+        self.history_box.delete("1.0", "end")
+        self.history_box.insert("1.0", "\n".join(lines))
         self.history_box.configure(state="disabled")
