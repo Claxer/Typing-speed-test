@@ -1,90 +1,95 @@
 import sqlite3
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-DATABASE_FILE = Path(__file__).resolve().parent / "typing_history.db"
+DB_PATH = Path(__file__).with_name("typing_test.db")
 
 
 def get_connection():
-    return sqlite3.connect(DATABASE_FILE)
+    return sqlite3.connect(DB_PATH)
 
 
 def create_tables():
+    """Create the test history table if it does not already exist."""
     with get_connection() as connection:
         connection.execute("""
-            CREATE TABLE IF NOT EXISTS typing_results (
+            CREATE TABLE IF NOT EXISTS test_results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                wpm REAL NOT NULL,
-                accuracy REAL NOT NULL,
-                mistakes INTEGER NOT NULL,
+                test_date TEXT NOT NULL,
                 difficulty TEXT NOT NULL,
                 duration INTEGER NOT NULL,
-                date TEXT NOT NULL
+                wpm REAL NOT NULL,
+                raw_wpm REAL NOT NULL,
+                accuracy REAL NOT NULL,
+                correct_chars INTEGER NOT NULL,
+                incorrect_chars INTEGER NOT NULL,
+                typed_chars INTEGER NOT NULL
             )
         """)
 
 
-def save_result(wpm, accuracy, mistakes, difficulty, duration):
-    test_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+def save_result(result):
     with get_connection() as connection:
         connection.execute("""
-            INSERT INTO typing_results
-            (wpm, accuracy, mistakes, difficulty, duration, date)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO test_results (
+                test_date, difficulty, duration, wpm, raw_wpm,
+                accuracy, correct_chars, incorrect_chars, typed_chars
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            round(wpm, 2),
-            round(accuracy, 2),
-            mistakes,
-            difficulty,
-            duration,
-            test_date
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            result["difficulty"],
+            result["duration"],
+            result["wpm"],
+            result["raw_wpm"],
+            result["accuracy"],
+            result["correct_chars"],
+            result["incorrect_chars"],
+            result["typed_chars"]
         ))
 
 
-def get_history(limit=50):
+def get_history(limit=100):
     with get_connection() as connection:
-        cursor = connection.execute("""
-            SELECT id, wpm, accuracy, mistakes, difficulty, duration, date
-            FROM typing_results
+        rows = connection.execute("""
+            SELECT id, test_date, difficulty, duration, wpm, accuracy,
+                   incorrect_chars
+            FROM test_results
             ORDER BY id DESC
             LIMIT ?
-        """, (limit,))
+        """, (limit,)).fetchall()
+    return rows
 
-        return cursor.fetchall()
 
-
-def get_personal_best():
+def get_statistics():
     with get_connection() as connection:
-        cursor = connection.execute("""
-            SELECT wpm, accuracy, difficulty, date
-            FROM typing_results
-            ORDER BY wpm DESC
-            LIMIT 1
-        """)
+        row = connection.execute("""
+            SELECT COUNT(*), COALESCE(MAX(wpm), 0),
+                   COALESCE(AVG(wpm), 0), COALESCE(AVG(accuracy), 0)
+            FROM test_results
+        """).fetchone()
+    return {
+        "total_tests": row[0],
+        "personal_best": round(row[1], 1),
+        "average_wpm": round(row[2], 1),
+        "average_accuracy": round(row[3], 1)
+    }
 
-        return cursor.fetchone()
 
-
-def get_total_tests():
+def get_recent_progress(limit=10):
     with get_connection() as connection:
-        cursor = connection.execute(
-            "SELECT COUNT(*) FROM typing_results"
-        )
-
-        return cursor.fetchone()[0]
-
-
-def get_average_wpm():
-    with get_connection() as connection:
-        cursor = connection.execute(
-            "SELECT AVG(wpm) FROM typing_results"
-        )
-
-        result = cursor.fetchone()[0]
-        return round(result, 2) if result is not None else 0
+        rows = connection.execute("""
+            SELECT test_date, wpm, accuracy
+            FROM (
+                SELECT id, test_date, wpm, accuracy
+                FROM test_results
+                ORDER BY id DESC
+                LIMIT ?
+            )
+            ORDER BY id ASC
+        """, (limit,)).fetchall()
+    return rows
 
 
 def clear_history():
     with get_connection() as connection:
-        connection.execute("DELETE FROM typing_results")
+        connection.execute("DELETE FROM test_results")
