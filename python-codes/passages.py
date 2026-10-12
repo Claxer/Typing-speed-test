@@ -2,29 +2,29 @@ import random
 
 PASSAGES = {
     "Easy": [
-        "The sun is shining and the weather is nice today. I enjoy learning new things and practicing my typing skills.",
-        "Python is a programming language that is easy to read and useful for building many different applications.",
-        "A good student practices every day and tries to improve one step at a time. Small efforts can lead to great results.",
-        "Technology helps people communicate, learn, and solve problems. Computers are useful tools in our daily lives.",
-        "Reading books and writing code can help improve your knowledge. Practice makes difficult tasks easier over time."
+        "Small steps can lead to big changes. Keep practicing and try to improve a little every day.",
+        "Learning to type faster takes time. Stay calm, look at the screen, and use the correct fingers.",
+        "A good habit starts with a simple action. Practice often and celebrate your progress.",
+        "Python is a useful programming language. It can help beginners build tools, games, and applications.",
+        "Focus on accuracy before speed. As your typing becomes more natural, your words per minute can improve."
     ],
     "Medium": [
-        "Programming requires patience, logical thinking, and consistent practice. Developers often solve complex problems by dividing them into smaller tasks.",
-        "Information technology connects people through computer networks, software applications, databases, and digital communication systems.",
-        "Learning a new programming language takes time. Understanding the fundamentals is more important than memorizing every command.",
-        "A computer system combines hardware and software to process information, perform calculations, and complete useful tasks.",
-        "Successful projects begin with clear goals, organized planning, careful testing, and a willingness to learn from mistakes."
+        "Good programmers solve problems by breaking them into smaller steps. They test each part, read error messages, and improve their code.",
+        "Technology changes quickly, but curiosity and consistent practice remain valuable skills for every student.",
+        "A reliable application should be easy to use, validate information, and handle unexpected situations without crashing.",
+        "Typing practice develops coordination between your eyes, hands, and mind. Accuracy is an important part of useful speed.",
+        "Every project teaches something new. Keep your files organized, write clear functions, and save your progress regularly."
     ],
     "Hard": [
-        "Software development involves analyzing requirements, designing solutions, implementing algorithms, debugging errors, and maintaining reliable applications.",
-        "Cybersecurity professionals protect computer systems by identifying vulnerabilities, monitoring suspicious activities, and applying appropriate security controls.",
-        "Efficient algorithms reduce unnecessary operations, improve processing time, and help applications handle increasingly complicated workloads.",
-        "Database management requires structured information, reliable transactions, appropriate permissions, and consistent backup procedures.",
-        "Artificial intelligence can analyze large datasets, recognize patterns, and support decision-making when implemented responsibly."
+        "Debugging is not simply fixing mistakes; it is a process of observing behavior, forming a hypothesis, testing it, and learning from the result.",
+        "A well-designed program balances usability, performance, reliability, and maintainability. Small improvements can make a noticeable difference.",
+        "Before releasing software, developers should verify edge cases, validate user input, review database operations, and document important decisions.",
+        "Consistency matters more than a single impressive result. Measure your progress over time, identify weak areas, and practice deliberately.",
+        "In Python, readable code is often better than clever code. Meaningful names, focused functions, and helpful comments make a project easier to maintain."
     ]
 }
 
-
-def get_passage(difficulty):
-    passages = PASSAGES.get(difficulty, PASSAGES["Easy"])
+def get_passage(difficulty="Medium"):
+    """Return a random passage for the selected difficulty."""
+    passages = PASSAGES.get(difficulty, PASSAGES["Medium"])
     return random.choice(passages)
