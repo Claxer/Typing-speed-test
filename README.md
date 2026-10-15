@@ -1,41 +1,67 @@
 # TypeFlow — Typing Speed Test
 
-A modern **Typing Speed Test** desktop application built with Python. TypeFlow helps users measure their typing speed, improve accuracy, track mistakes, and review their typing performance over time.
+A modern **Typing Speed Test** desktop application built with Python. TypeFlow helps users measure their typing speed, improve accuracy, track mistakes, and monitor their typing performance over time.
 
-The application features timed typing challenges, multiple difficulty levels, real-time statistics, character-by-character feedback, and a local database for storing test results.
+The application features a progress dashboard, timed and endless typing modes, multiple difficulty levels, custom typing passages, real-time statistics, and a local SQLite database for storing completed test results.
 
 ## Features
 
+### Typing Test
+
 * **Typing Speed Test** — Measure typing speed in words per minute (WPM).
+* **Timed Challenges** — Choose between 30-second, 60-second, and 120-second tests.
+* **Endless Mode** — Practice typing without a countdown timer until the passage is completed.
+* **Difficulty Levels** — Practice with Easy, Medium, and Hard passages.
+* **Custom Passages** — Enter your own text to practice with preferred words, sentences, or paragraphs.
+* **Random Passages** — Automatically select a passage based on the selected difficulty when custom text is not provided.
+* **Automatic Timer** — The countdown begins when the user starts typing in timed mode.
+* **Automatic Test Completion** — Finish when the timer expires or when the passage is completed in endless mode.
 * **Real-Time Statistics** — Monitor WPM, accuracy, and mistakes while typing.
-* **Timed Challenges** — Choose 30-second, 60-second, or 120-second tests.
-* **Difficulty Levels** — Practice using Easy, Medium, and Hard passages.
-* **Automatic Timer** — The countdown starts when the user types the first character.
-* **Automatic Test Completion** — The test finishes when the time runs out or the entire passage has been typed.
-* **Character Highlighting** — Display correct, incorrect, and remaining characters in different colors.
-* **Error Tracking** — Count incorrect characters and extra characters typed beyond the passage.
-* **Live WPM Calculation** — Update typing speed as the user continues typing.
-* **Accuracy Monitoring** — Calculate the percentage of correctly typed characters.
-* **Restart and New Passage** — Reset the test and generate a new passage for additional practice.
-* **Automatic Results Saving** — Store completed test results in a local SQLite database.
-* **Personal Best** — Track your highest recorded WPM.
-* **Average Typing Speed** — View your average WPM across completed tests.
-* **Typing History** — Review previous results, including accuracy, difficulty, and date.
-* **Modern Interface** — Navigate through a clean dark-themed desktop application.
-* **Local Data Storage** — Keep test history on your computer without requiring an online account.
-* **Modular Code Structure** — Separate the typing test, database, passages, results, and application navigation into different Python files.
+* **Error Tracking** — Count incorrect and extra characters.
+* **Accuracy Monitoring** — Calculate the percentage of correctly matched characters.
+* **Flexible Practice** — Select the preferred test mode, duration, and difficulty before starting.
+
+### Progress Dashboard
+
+* **Personal Best** — View the highest recorded WPM.
+* **Total Tests** — Track the number of completed typing tests.
+* **Average WPM** — Review average typing speed across saved attempts.
+* **Average Accuracy** — Monitor overall typing accuracy.
+* **Progress Overview** — Review recent WPM values to observe changes in typing performance.
+* **Recent Performance** — Access previous test results and compare attempts over time.
+
+### Results and Statistics
+
+* **Detailed Test Results** — Review WPM, raw WPM, accuracy, mistakes, and character counts.
+* **Correct Character Tracking** — Record the number of characters that match the target passage.
+* **Mistake Statistics** — Monitor typing errors across completed tests.
+* **Test Duration Tracking** — Save the elapsed time for each completed test.
+* **Difficulty and Mode Tracking** — Store the selected difficulty and typing mode with each result.
+* **Recent Test History** — Review the latest completed attempts.
+* **Persistent Results** — Keep saved statistics between application sessions using SQLite.
+* **Recent Average WPM** — Calculate average typing speed across recent tests.
+
+### Interface and Data Management
+
+* **Modern Dark Theme** — Use a clean desktop interface built with CustomTkinter.
+* **Dashboard Navigation** — Access the typing test, progress overview, and results history.
+* **Local Data Storage** — Store test results on the computer without requiring an online account.
+* **Modular Code Structure** — Separate the application, typing test, database, passages, and results into individual Python files.
+* **Database Initialization** — Create the required SQLite table when the application starts.
+* **Database Compatibility** — Add supported statistics columns to an existing `test_results` table when they are missing.
 
 ## Technologies Used
 
-| Technology           | Purpose                                                     |
-| -------------------- | ----------------------------------------------------------- |
-| Python               | Main programming language                                   |
-| CustomTkinter        | Graphical user interface                                    |
-| SQLite               | Local database for storing test results                     |
-| `time`               | Tracking elapsed time and calculating typing speed          |
-| `random`             | Selecting typing passages                                   |
-| `tkinter.messagebox` | Displaying informational messages                           |
-| `after()`            | Updating the countdown timer without freezing the interface |
+| Technology | Purpose |
+|---|---|
+| Python | Main programming language |
+| CustomTkinter | Desktop graphical user interface |
+| SQLite | Local storage for test results and statistics |
+| `time` | Track elapsed time and calculate typing speed |
+| `random` | Select random typing passages |
+| `datetime` | Record the date and time of completed tests |
+| `sqlite3` | Connect to and manage the SQLite database |
+| `after()` | Schedule timer updates without blocking the interface |
 
 ## Project Structure
 
@@ -53,14 +79,14 @@ Typing-Speed-Test/
 
 ### File Descriptions
 
-* `main.py` — Starts the application, creates the main interface, manages navigation, and handles completed test results.
-* `database.py` — Creates the SQLite database and provides functions for saving and retrieving typing results and statistics.
-* `typing_test.py` — Handles the typing interface, difficulty selection, test duration, countdown timer, character highlighting, and real-time statistics.
-* `passages.py` — Stores and selects typing passages according to the selected difficulty.
-* `results.py` — Displays typing statistics and previously recorded test results.
-* `requirements.txt` — Lists the required Python packages.
+* `main.py` — Starts the application, displays the progress dashboard, manages navigation, provides typing test settings, and handles completed results.
+* `database.py` — Initializes the SQLite database and provides functions for saving test results, retrieving history, and calculating statistics.
+* `typing_test.py` — Handles the typing interface, timed and endless modes, difficulty settings, custom passages, timer updates, and real-time typing statistics.
+* `passages.py` — Stores predefined passages and selects text according to the selected difficulty or custom input.
+* `results.py` — Displays saved performance statistics, personal best, average WPM, accuracy, total tests, mistakes, and recent test history.
+* `requirements.txt` — Lists the Python packages required to run the application.
 * `.gitignore` — Excludes temporary files, Python cache files, virtual environments, and local database files.
-* `README.md` — Contains the project documentation, installation instructions, and feature descriptions.
+* `README.md` — Documents the project's features, installation, usage, and implementation.
 
 ## Installation
 
@@ -84,7 +110,13 @@ cd Typing-Speed-Test
 python -m pip install -r requirements.txt
 ```
 
-Make sure Python is installed on your computer before installing the required packages.
+The `requirements.txt` file should contain:
+
+```text
+customtkinter
+```
+
+Make sure Python is installed on your computer before installing the required package.
 
 ### 4. Run the Application
 
@@ -92,35 +124,63 @@ Make sure Python is installed on your computer before installing the required pa
 python main.py
 ```
 
-The application initializes its local SQLite database through the database module.
+The application initializes the SQLite database when it starts.
 
 ## How to Use
 
-1. Open TypeFlow by running `main.py`.
-2. Select **Typing Test** from the application sidebar.
-3. Choose your preferred difficulty: Easy, Medium, or Hard.
-4. Select a test duration of 30, 60, or 120 seconds.
-5. Begin typing the displayed passage. The timer starts with your first character.
-6. Observe the live WPM, accuracy percentage, and error count.
-7. Check the passage for color-coded feedback:
+### Starting a Typing Test
 
-   * **Green** — Correctly typed characters.
-   * **Red** — Incorrectly typed characters.
-   * **Gray** — Characters that have not yet been typed.
-8. Complete the passage or allow the timer to expire.
-9. Review the final test statistics.
-10. Open **Results & History** to review previously saved results.
-11. Select **New Passage / Restart** to practice again.
+1. Run `main.py` to open TypeFlow.
+2. Review the progress dashboard for your personal best, total tests, average WPM, and average accuracy.
+3. Choose your preferred typing mode:
+   * **Timed** — Complete the test within the selected time limit.
+   * **Endless** — Practice without a countdown until the passage is completed.
+4. Choose a duration of 30, 60, or 120 seconds for timed mode.
+5. Select Easy, Medium, or Hard difficulty.
+6. Optionally enter custom text. Leave the custom passage field empty to use a randomly selected passage.
+7. Click **Start Typing Test**.
+8. Begin typing the displayed passage. In timed mode, the countdown starts with the first character.
+9. Monitor your WPM, accuracy, and mistakes.
+10. Finish the passage or allow the timer to expire.
+11. Review your final statistics.
+12. Open **View Results and History** to review your previous attempts.
+
+### Using Custom Passages
+
+The custom passage field lets users practice with their own text instead of the predefined passages.
+
+1. Enter a sentence, paragraph, or longer text into the custom passage field.
+2. Choose a typing mode and difficulty.
+3. Start the test.
+4. Type the custom passage displayed by the application.
+
+When custom text is provided, it takes priority over the predefined passage collection.
+
+### Reviewing Progress
+
+The dashboard provides a summary of overall typing performance.
+
+Users can review:
+
+* Highest recorded WPM.
+* Total number of completed tests.
+* Average WPM.
+* Average accuracy.
+* Recent WPM values.
+
+The results page also provides recent test history, including the selected mode, difficulty, WPM, accuracy, mistakes, and completion date.
 
 ## Understanding the Statistics
 
 ### Words Per Minute (WPM)
 
-WPM estimates typing speed using the standard convention of five characters per word. TypeFlow calculates its displayed WPM using correctly typed characters divided by five and the elapsed time in minutes.
+WPM estimates typing speed using the standard convention of five characters per word.
 
-`WPM = Correct Characters / 5 / Elapsed Minutes`
+The application calculates its displayed WPM using the total number of typed characters divided by five and the elapsed time in minutes.
 
-The live WPM value updates while typing. The program uses a minimum one-second calculation interval to avoid dividing by zero.
+`WPM = Total Typed Characters / 5 / Elapsed Minutes`
+
+The displayed value updates while typing. The implementation uses a minimum one-second calculation interval to avoid dividing by zero.
 
 ### Raw WPM
 
@@ -128,7 +188,7 @@ Raw WPM estimates typing speed using all typed characters, including incorrect c
 
 `Raw WPM = Total Typed Characters / 5 / Elapsed Minutes`
 
-Raw WPM represents typing speed before accounting for mistakes.
+In the current implementation, displayed WPM and raw WPM use the same calculation. Therefore, their values are equal. A future improvement could calculate adjusted WPM separately to account for errors.
 
 ### Accuracy
 
@@ -136,89 +196,123 @@ Accuracy measures the percentage of typed characters that match the correspondin
 
 `Accuracy = Correct Characters / Total Typed Characters × 100`
 
-Accuracy starts at 100% before typing begins. Once typing starts, it changes according to the characters entered.
+The application starts at 100% accuracy before any characters are entered. Accuracy is updated as the user types.
 
 ### Mistakes
 
-Mistakes count typed characters that do not match the corresponding passage characters, including extra characters beyond the passage.
+Mistakes count typed characters that do not match their corresponding positions in the target passage. Extra characters beyond the passage are also counted as mistakes.
 
 For example, if the target character is `a` but the user types `b`, that character is counted as an error.
 
-These are simplified character-based measurements intended for practice and learning.
+### Correct Characters
+
+Correct characters represent the number of typed characters that match the corresponding characters in the target passage.
+
+This value is saved with the completed test to support additional performance analysis.
+
+### Average WPM
+
+Average WPM represents the arithmetic mean of the WPM values recorded across completed tests.
+
+`Average WPM = Sum of Recorded WPM Values / Number of Completed Tests`
+
+### Personal Best
+
+Personal best represents the highest WPM value recorded in the local database.
+
+### Recent Average WPM
+
+Recent average WPM calculates the average speed across the five most recent completed tests, or fewer if fewer than five results are available.
 
 ## Database
 
 TypeFlow uses SQLite to store completed typing test results locally.
 
-The database module manages saving results, retrieving previous attempts, and calculating statistics for the results page.
-
-Depending on the database configuration in `database.py`, the generated database file may have a different name. The database filename configured in that file should be used when describing the project's local storage.
+The reconstructed database module uses the filename `typeflow.db` and creates a table named `test_results`.
 
 Saved results can include:
 
-* Test ID
-* Words per minute
-* Accuracy percentage
-* Number of mistakes
-* Difficulty level
-* Test duration
-* Date and time
+* Test ID.
+* WPM.
+* Raw WPM.
+* Accuracy percentage.
+* Number of mistakes.
+* Correct characters.
+* Total typed characters.
+* Elapsed test duration.
+* Difficulty level.
+* Typing mode.
+* Date and time.
 
-The database is stored locally, so results are not automatically shared or synchronized across devices.
+The database module also provides functions for retrieving test history, personal best, average WPM, average accuracy, total mistakes, recent average WPM, and progress data.
+
+The database is stored locally. Results are not automatically synchronized between computers or uploaded to an online service.
+
+**Important:** If you are continuing from an older TypeFlow version, check the existing database filename and schema before replacing `database.py`. The reconstructed version uses `typeflow.db`; your previous application may use a different database file and table structure.
 
 ## Error Handling and Test Controls
 
-TypeFlow includes several controls intended to make the typing test easier to use:
+TypeFlow includes basic controls intended to keep the typing test functional:
 
-* **Empty Test Protection** — Prevents a test from being completed before the user starts typing.
-* **Timer Management** — Cancels scheduled timer updates when restarting or leaving the test.
-* **Input Locking** — Disables typing input after a test is completed.
-* **Restart Support** — Resets the timer, statistics, passage, and typing area.
-* **Automatic Completion** — Prevents the test from continuing after the timer expires or the passage is completed.
+* **Timer Management** — Cancels scheduled timer updates when finishing or leaving a test.
+* **Duplicate Completion Protection** — Prevents the same test from being saved repeatedly by the completion handler.
+* **Automatic Completion** — Ends timed tests when the countdown expires.
+* **Endless Mode Completion** — Ends the test when the typed input reaches the passage length.
+* **Local Database Storage** — Saves completed test results for later review.
+* **Database Initialization** — Creates the database table and adds supported missing columns when necessary.
+
+Some features from the earlier version, such as character-by-character color highlighting and a dedicated restart/new-passage control, may need to be restored separately if they were part of your original implementation.
 
 ## Learning Objectives
 
 This project demonstrates practical programming concepts, including:
 
 * Object-oriented programming using Python classes.
-* Building a desktop GUI with CustomTkinter.
-* Event handling and keyboard input.
-* Timers and scheduled UI updates.
-* Calculating typing speed and accuracy.
+* Building desktop interfaces with CustomTkinter.
+* Handling keyboard input and GUI events.
+* Using scheduled callbacks for timers.
+* Calculating typing speed, accuracy, and mistakes.
 * Comparing strings character by character.
 * Using loops and conditional statements.
 * Working with lists and dictionaries.
-* Connecting Python to an SQLite database.
-* Organizing application logic into separate modules.
-* Displaying and storing historical data.
-* Handling user input and basic application errors.
-* Organizing a project for GitHub.
+* Creating and querying SQLite databases.
+* Saving and retrieving historical data.
+* Designing a modular application architecture.
+* Building a dashboard from stored statistics.
+* Handling custom user input.
+* Organizing and documenting a Python project for GitHub.
 
 ## Limitations
 
-* Typing passages are selected from a predefined collection.
-* Statistics use simplified character-based calculations.
-* The application does not currently provide online synchronization.
+* Predefined passages are selected from a limited collection.
+* Endless mode uses a single passage per test rather than continuously generating new text.
+* Typing statistics use simplified character-based calculations.
+* Raw WPM and displayed WPM currently use the same formula.
+* The progress overview displays recent WPM values as text rather than a graphical chart.
+* Character-by-character color highlighting is not implemented in the reconstructed version.
+* The application does not currently provide online synchronization or cloud backups.
 * Results are stored locally and are not shared between computers.
-* Typing performance can vary depending on the keyboard, typing style, and passage difficulty.
-* Raw WPM and displayed WPM use different character counts, so their values may differ.
+* There are no separate user accounts or individual profiles.
+* Typing performance may vary depending on the keyboard, typing style, and passage difficulty.
 * The application requires Python and its dependencies to be installed before it can run.
 
 ## Future Improvements
 
-Potential future features include:
+Potential future enhancements include:
 
-* More typing passages and custom text.
-* Additional difficulty levels.
-* Difficulty-specific leaderboards.
-* Daily typing challenges.
-* Visual typing progress charts.
-* Exporting results to CSV.
-* User profiles and separate score histories.
-* Detailed typing analytics.
-* Keyboard shortcut support.
+* Visual progress charts for WPM and accuracy.
+* Additional typing passages and continuously generated endless-mode text.
+* Character-by-character correct and incorrect highlighting.
+* Separate adjusted WPM calculations that account for mistakes.
+* Typing consistency and error-rate analysis.
 * Personal achievements and typing streaks.
-* Improved statistics and performance comparisons.
+* Daily typing challenges.
+* Keyboard shortcuts and customizable settings.
+* Exporting test history to CSV.
+* User profiles and separate score histories.
+* Improved passage selection and custom passage management.
+* More detailed performance comparisons between different tests.
+* Improved accessibility and interface customization.
 
 ## Author
 
