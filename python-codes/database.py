@@ -1,193 +1,124 @@
-
 import sqlite3
-from datetime import datetime
+from datetime import date
+from pathlib import Path
 
-DATABASE_NAME = "typeflow.db"
+DB_PATH = Path(__file__).resolve().parent / "typeflow.db"
 
 
 def get_connection():
-    return sqlite3.connect(DATABASE_NAME)
+    return sqlite3.connect(DB_PATH)
 
 
-def create_tables():
-    with get_connection() as connection:
-        connection.execute("""
-            CREATE TABLE IF NOT EXISTS test_results (
+def init_db():
+    with get_connection() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 wpm REAL NOT NULL,
-                raw_wpm REAL DEFAULT 0,
                 accuracy REAL NOT NULL,
-                mistakes INTEGER DEFAULT 0,
-                correct_chars INTEGER DEFAULT 0,
-                total_chars INTEGER DEFAULT 0,
-                duration INTEGER DEFAULT 0,
-                difficulty TEXT DEFAULT 'Easy',
-                mode TEXT DEFAULT 'Timed',
-                date TEXT NOT NULL
+                mistakes INTEGER NOT NULL,
+                duration INTEGER NOT NULL,
+                difficulty TEXT NOT NULL,
+                characters INTEGER NOT NULL,
+                created_at TEXT NOT NULL
             )
         """)
 
-        # Add newer columns if an older TypeFlow database is used.
-        existing_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(test_results)"
-            ).fetchall()
-        }
-
-        additions = {
-            "raw_wpm": "REAL DEFAULT 0",
-            "correct_chars": "INTEGER DEFAULT 0",
-            "total_chars": "INTEGER DEFAULT 0",
-            "duration": "INTEGER DEFAULT 0",
-            "difficulty": "TEXT DEFAULT 'Easy'",
-            "mode": "TEXT DEFAULT 'Timed'"
-        }
-
-        for column, definition in additions.items():
-            if column not in existing_columns:
-                connection.execute(
-                    f"ALTER TABLE test_results ADD COLUMN {column} {definition}"
-                )
-
-
-def save_result(
-    wpm,
-    accuracy,
-    mistakes,
-    duration=0,
-    difficulty="Easy",
-    mode="Timed",
-    raw_wpm=0,
-    correct_chars=0,
-    total_chars=0
-):
-    with get_connection() as connection:
-        connection.execute("""
-            INSERT INTO test_results (
-                wpm, raw_wpm, accuracy, mistakes,
-                correct_chars, total_chars, duration,
-                difficulty, mode, date
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """)
+
+        conn.execute("""
+            INSERT OR IGNORE INTO settings (key, value)
+            VALUES ('daily_goal', '3')
+        """)
+
+
+def save_result(wpm, accuracy, mistakes, duration,
+                difficulty, characters):
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT INTO results
+            (wpm, accuracy, mistakes, duration,
+             difficulty, characters, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
-            wpm,
-            raw_wpm,
-            accuracy,
+            round(wpm, 2),
+            round(accuracy, 2),
             mistakes,
-            correct_chars,
-            total_chars,
             duration,
             difficulty,
-            mode,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            characters,
+            date.today().isoformat()
         ))
 
 
-def get_history(limit=None):
-    with get_connection() as connection:
-        if limit is None:
-            rows = connection.execute("""
-                SELECT id, wpm, accuracy, mistakes, date,
-                       raw_wpm, correct_chars, total_chars,
-                       duration, difficulty, mode
-                FROM test_results
+def get_results(search=""):
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+
+        if search.strip():
+            return [
+                dict(row) for row in conn.execute("""
+                    SELECT * FROM results
+                    WHERE difficulty LIKE ?
+                       OR created_at LIKE ?
+                    ORDER BY id DESC
+                """, (
+                    f"%{search.strip()}%",
+                    f"%{search.strip()}%"
+                )).fetchall()
+            ]
+
+        return [
+            dict(row) for row in conn.execute("""
+                SELECT * FROM results
                 ORDER BY id DESC
             """).fetchall()
-        else:
-            rows = connection.execute("""
-                SELECT id, wpm, accuracy, mistakes, date,
-                       raw_wpm, correct_chars, total_chars,
-                       duration, difficulty, mode
-                FROM test_results
-                ORDER BY id DESC
-                LIMIT ?
-            """, (limit,)).fetchall()
-
-    return [
-        {
-            "id": row[0],
-            "wpm": row[1],
-            "accuracy": row[2],
-            "mistakes": row[3],
-            "date": row[4],
-            "raw_wpm": row[5],
-            "correct_chars": row[6],
-            "total_chars": row[7],
-            "duration": row[8],
-            "difficulty": row[9],
-            "mode": row[10]
-        }
-        for row in rows
-    ]
+        ]
 
 
-def get_personal_best():
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT MAX(wpm) FROM test_results"
+def get_setting(key, default=""):
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = ?",
+            (key,)
         ).fetchone()
 
-    return row[0] or 0
+    return row[0] if row else default
 
 
-def get_total_tests():
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT COUNT(*) FROM test_results"
-        ).fetchone()
+def set_setting(key, value):
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT INTO settings (key, value)
+            VALUES (?, ?)
+            ON CONFLICT(key)
+            DO UPDATE SET value = excluded.value
+        """, (key, str(value)))
+
+
+def get_today_count():
+    with get_connection() as conn:
+        row = conn.execute("""
+            SELECT COUNT(*) FROM results
+            WHERE created_at = ?
+        """, (date.today().isoformat(),)).fetchone()
 
     return row[0]
 
 
-def get_average_wpm():
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT AVG(wpm) FROM test_results"
-        ).fetchone()
-
-    return row[0] or 0
-
-
-def get_average_accuracy():
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT AVG(accuracy) FROM test_results"
-        ).fetchone()
-
-    return row[0] or 0
+def delete_result(result_id):
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM results WHERE id = ?",
+            (result_id,)
+        )
 
 
-def get_total_mistakes():
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT SUM(mistakes) FROM test_results"
-        ).fetchone()
-
-    return row[0] or 0
-
-
-def get_recent_average_wpm(count=5):
-    history = get_history(limit=count)
-
-    if not history:
-        return 0
-
-    return sum(item["wpm"] for item in history) / len(history)
-
-
-def get_progress_data():
-    history = get_history(limit=20)
-    history.reverse()
-
-    return {
-        "labels": [
-            item["date"][5:16] for item in history
-        ],
-        "wpm": [
-            item["wpm"] for item in history
-        ],
-        "accuracy": [
-            item["accuracy"] for item in history
-        ]
-    }
+def clear_results():
+    with get_connection() as conn:
+        conn.execute("DELETE FROM results")
