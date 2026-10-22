@@ -1,16 +1,12 @@
-
 import customtkinter as ctk
+from tkinter import messagebox
 
-from database import (
-    create_tables,
-    get_personal_best,
-    get_total_tests,
-    get_average_wpm,
-    get_average_accuracy,
-    get_progress_data
-)
+from database import init_db, get_results, delete_result
 from typing_test import TypingTestFrame
-from results import ResultsFrame
+from dashboard import DashboardFrame
+from achievements import get_achievements
+from settings import get_daily_goal, update_daily_goal
+from export import export_results
 
 
 ctk.set_appearance_mode("dark")
@@ -21,212 +17,304 @@ class TypeFlowApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("TypeFlow - Typing Speed Test")
-        self.geometry("1000x750")
-        self.minsize(850, 650)
+        init_db()
 
-        self.current_frame = None
-        self.last_result = None
+        self.title("TypeFlow - Typing Speed Test")
+        self.geometry("1100x750")
+        self.minsize(900, 650)
+
+        self.sidebar = ctk.CTkFrame(
+            self, width=200, corner_radius=0
+        )
+        self.sidebar.pack(side="left", fill="y")
+        self.sidebar.pack_propagate(False)
+
+        self.content = ctk.CTkFrame(
+            self, corner_radius=0
+        )
+        self.content.pack(
+            side="right", fill="both", expand=True
+        )
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text="TypeFlow",
+            font=ctk.CTkFont(size=27, weight="bold")
+        ).pack(padx=20, pady=(30, 5))
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text="Typing Speed Test",
+            text_color="gray"
+        ).pack(pady=(0, 25))
+
+        pages = [
+            ("Dashboard", self.show_dashboard),
+            ("Typing Test", self.show_typing_test),
+            ("History", self.show_history),
+            ("Achievements", self.show_achievements),
+            ("Settings", self.show_settings)
+        ]
+
+        for label, command in pages:
+            ctk.CTkButton(
+                self.sidebar,
+                text=label,
+                command=command,
+                height=40
+            ).pack(fill="x", padx=15, pady=5)
+
+        ctk.CTkButton(
+            self.sidebar,
+            text="Export CSV",
+            command=export_results,
+            height=40
+        ).pack(fill="x", padx=15, pady=(25, 5))
+
+        ctk.CTkButton(
+            self.sidebar,
+            text="Exit",
+            command=self.confirm_exit,
+            fg_color="#8B3030",
+            hover_color="#6E2424"
+        ).pack(side="bottom", fill="x", padx=15, pady=20)
 
         self.show_dashboard()
 
-    def clear_frame(self):
-        if self.current_frame is not None:
-            self.current_frame.destroy()
-
-        self.current_frame = ctk.CTkFrame(
-            self, fg_color="transparent"
-        )
-        self.current_frame.pack(
-            fill="both", expand=True, padx=20, pady=20
-        )
+    def clear_content(self):
+        for widget in self.content.winfo_children():
+            widget.destroy()
 
     def show_dashboard(self):
-        self.clear_frame()
+        self.clear_content()
+        DashboardFrame(self.content)
+
+    def show_typing_test(self):
+        self.clear_content()
+
+        TypingTestFrame(
+            self.content,
+            on_complete=self.refresh_after_test
+        ).pack(fill="both", expand=True, padx=20, pady=20)
+
+    def refresh_after_test(self):
+        # Refresh the dashboard when a test finishes.
+        for widget in self.content.winfo_children():
+            if isinstance(widget, DashboardFrame):
+                widget.refresh()
+
+    def show_history(self):
+        self.clear_content()
 
         ctk.CTkLabel(
-            self.current_frame,
-            text="TypeFlow",
-            font=("Arial", 34, "bold")
-        ).pack(pady=(15, 3))
+            self.content,
+            text="Typing History",
+            font=ctk.CTkFont(size=28, weight="bold")
+        ).pack(anchor="w", padx=20, pady=(20, 10))
 
-        ctk.CTkLabel(
-            self.current_frame,
-            text="Your personal typing improvement dashboard",
-            font=("Arial", 14)
-        ).pack(pady=(0, 20))
+        search_row = ctk.CTkFrame(
+            self.content, fg_color="transparent"
+        )
+        search_row.pack(fill="x", padx=20, pady=10)
 
-        stats = ctk.CTkFrame(self.current_frame)
-        stats.pack(fill="x", pady=10)
+        search_entry = ctk.CTkEntry(
+            search_row,
+            placeholder_text="Search date or difficulty..."
+        )
+        search_entry.pack(side="left", fill="x", expand=True)
 
-        items = [
-            ("Personal Best", f"{get_personal_best():.1f} WPM"),
-            ("Total Tests", str(get_total_tests())),
-            ("Average WPM", f"{get_average_wpm():.1f}"),
-            ("Average Accuracy", f"{get_average_accuracy():.1f}%")
-        ]
+        table = ctk.CTkTextbox(
+            self.content, font=("Consolas", 13)
+        )
+        table.pack(
+            fill="both", expand=True, padx=20, pady=10
+        )
 
-        for index, (label, value) in enumerate(items):
-            card = ctk.CTkFrame(stats)
-            card.grid(
-                row=0, column=index,
-                padx=6, pady=8, sticky="nsew"
+        def refresh_history():
+            table.configure(state="normal")
+            table.delete("1.0", "end")
+
+            rows = get_results(search_entry.get())
+
+            table.insert(
+                "end",
+                "ID | DATE       | MODE   | WPM  | ACCURACY | ERRORS | SECONDS\n"
             )
+            table.insert("end", "-" * 75 + "\n")
+
+            for row in rows:
+                table.insert(
+                    "end",
+                    f'{row["id"]:>2} | '
+                    f'{row["created_at"]} | '
+                    f'{row["difficulty"]:<6} | '
+                    f'{row["wpm"]:>5.1f} | '
+                    f'{row["accuracy"]:>7.1f}% | '
+                    f'{row["mistakes"]:>6} | '
+                    f'{row["duration"]:>7}\n'
+                )
+
+            if not rows:
+                table.insert("end", "\nNo results found.")
+
+            table.configure(state="disabled")
+
+        def delete_selected():
+            selection = table.get("sel.first", "sel.last").strip()
+
+            if not selection:
+                messagebox.showinfo(
+                    "Delete Result",
+                    "Highlight a result line first."
+                )
+                return
+
+            try:
+                result_id = int(selection.split("|")[0].strip())
+            except (ValueError, IndexError):
+                messagebox.showwarning(
+                    "Delete Result",
+                    "Select a valid result line."
+                )
+                return
+
+            if messagebox.askyesno(
+                "Confirm Delete",
+                f"Delete typing result #{result_id}?"
+            ):
+                delete_result(result_id)
+                refresh_history()
+
+        ctk.CTkButton(
+            search_row,
+            text="Search",
+            command=refresh_history,
+            width=100
+        ).pack(side="left", padx=8)
+
+        buttons = ctk.CTkFrame(
+            self.content, fg_color="transparent"
+        )
+        buttons.pack(fill="x", padx=20, pady=(0, 20))
+
+        ctk.CTkButton(
+            buttons,
+            text="Show All",
+            command=lambda: (
+                search_entry.delete(0, "end"),
+                refresh_history()
+            )
+        ).pack(side="left", padx=(0, 8))
+
+        ctk.CTkButton(
+            buttons,
+            text="Delete Selected",
+            command=delete_selected,
+            fg_color="#8B3030",
+            hover_color="#6E2424"
+        ).pack(side="left")
+
+        refresh_history()
+
+    def show_achievements(self):
+        self.clear_content()
+
+        ctk.CTkLabel(
+            self.content,
+            text="Achievements",
+            font=ctk.CTkFont(size=28, weight="bold")
+        ).pack(anchor="w", padx=20, pady=20)
+
+        achievements = get_achievements()
+        unlocked = sum(
+            item["unlocked"] for item in achievements
+        )
+
+        ctk.CTkLabel(
+            self.content,
+            text=f"Unlocked: {unlocked}/{len(achievements)}"
+        ).pack(anchor="w", padx=20, pady=(0, 15))
+
+        for item in achievements:
+            status = "UNLOCKED" if item["unlocked"] else "LOCKED"
+
+            card = ctk.CTkFrame(
+                self.content, corner_radius=10
+            )
+            card.pack(fill="x", padx=20, pady=5)
 
             ctk.CTkLabel(
                 card,
-                text=label,
-                font=("Arial", 12)
-            ).pack(padx=10, pady=(12, 4))
+                text=f'{status}  |  {item["name"]}',
+                font=ctk.CTkFont(size=16, weight="bold")
+            ).pack(anchor="w", padx=15, pady=(10, 2))
 
             ctk.CTkLabel(
                 card,
-                text=value,
-                font=("Arial", 20, "bold")
-            ).pack(padx=10, pady=(4, 12))
+                text=item["description"],
+                text_color="gray"
+            ).pack(anchor="w", padx=15, pady=(0, 10))
 
-            stats.grid_columnconfigure(
-                index, weight=1
-            )
-
-        ctk.CTkLabel(
-            self.current_frame,
-            text="Start a Typing Test",
-            font=("Arial", 22, "bold")
-        ).pack(pady=(20, 10))
-
-        settings = ctk.CTkFrame(self.current_frame)
-        settings.pack(fill="x", pady=5)
-
-        self.mode_var = ctk.StringVar(value="Timed")
-        self.duration_var = ctk.StringVar(value="60")
-        self.difficulty_var = ctk.StringVar(value="Medium")
+    def show_settings(self):
+        self.clear_content()
 
         ctk.CTkLabel(
-            settings, text="Mode"
-        ).grid(row=0, column=0, padx=10, pady=10)
-
-        ctk.CTkOptionMenu(
-            settings,
-            variable=self.mode_var,
-            values=["Timed", "Endless"]
-        ).grid(row=0, column=1, padx=10, pady=10)
+            self.content,
+            text="Settings",
+            font=ctk.CTkFont(size=28, weight="bold")
+        ).pack(anchor="w", padx=20, pady=20)
 
         ctk.CTkLabel(
-            settings, text="Duration"
-        ).grid(row=0, column=2, padx=10, pady=10)
-
-        ctk.CTkOptionMenu(
-            settings,
-            variable=self.duration_var,
-            values=["30", "60", "120"]
-        ).grid(row=0, column=3, padx=10, pady=10)
+            self.content,
+            text="Daily Practice Goal",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(anchor="w", padx=20, pady=(15, 5))
 
         ctk.CTkLabel(
-            settings, text="Difficulty"
-        ).grid(row=0, column=4, padx=10, pady=10)
+            self.content,
+            text="Choose how many typing tests you want to complete each day.",
+            text_color="gray"
+        ).pack(anchor="w", padx=20, pady=5)
 
-        ctk.CTkOptionMenu(
-            settings,
-            variable=self.difficulty_var,
-            values=["Easy", "Medium", "Hard"]
-        ).grid(row=0, column=5, padx=10, pady=10)
-
-        settings.grid_columnconfigure(
-            tuple(range(6)), weight=1
+        goal_entry = ctk.CTkEntry(
+            self.content, width=200
         )
+        goal_entry.pack(anchor="w", padx=20, pady=10)
+        goal_entry.insert(0, str(get_daily_goal()))
 
-        ctk.CTkLabel(
-            self.current_frame,
-            text="Optional custom passage (leave empty for a random passage)"
-        ).pack(anchor="w", pady=(15, 5))
-
-        self.custom_text = ctk.CTkTextbox(
-            self.current_frame, height=75
-        )
-        self.custom_text.pack(fill="x", pady=5)
+        def save_goal():
+            try:
+                goal = update_daily_goal(goal_entry.get())
+                messagebox.showinfo(
+                    "Settings Saved",
+                    f"Your daily goal is now {goal} tests."
+                )
+            except ValueError:
+                messagebox.showerror(
+                    "Invalid Goal",
+                    "Enter a whole number from 1 to 100."
+                )
 
         ctk.CTkButton(
-            self.current_frame,
-            text="Start Typing Test",
-            height=42,
-            command=self.start_test
-        ).pack(pady=10)
-
-        ctk.CTkButton(
-            self.current_frame,
-            text="View Results and History",
-            command=self.show_results
-        ).pack(pady=5)
-
-        self.show_progress_summary()
-
-    def show_progress_summary(self):
-        data = get_progress_data()
-
-        if not data["wpm"]:
-            text = "Complete your first test to start tracking your progress."
-        else:
-            text = "Recent WPM: " + "  →  ".join(
-                f"{value:.1f}" for value in data["wpm"][-8:]
-            )
+            self.content,
+            text="Save Goal",
+            command=save_goal
+        ).pack(anchor="w", padx=20, pady=5)
 
         ctk.CTkLabel(
-            self.current_frame,
-            text="Progress Overview",
-            font=("Arial", 18, "bold")
-        ).pack(pady=(15, 5))
+            self.content,
+            text="Your test history and settings are stored locally.",
+            text_color="gray"
+        ).pack(anchor="w", padx=20, pady=20)
 
-        ctk.CTkLabel(
-            self.current_frame,
-            text=text,
-            wraplength=850
-        ).pack(pady=5)
-
-    def start_test(self):
-        mode = self.mode_var.get()
-        duration = int(self.duration_var.get())
-        difficulty = self.difficulty_var.get()
-        custom_text = self.custom_text.get(
-            "1.0", "end-1c"
-        ).strip()
-
-        self.clear_frame()
-
-        self.current_frame.pack_forget()
-        self.current_frame = TypingTestFrame(
-            self,
-            on_back=self.show_dashboard,
-            on_complete=self.test_completed,
-            mode=mode,
-            duration=duration,
-            difficulty=difficulty,
-            custom_text=custom_text
-        )
-        self.current_frame.pack(
-            fill="both", expand=True, padx=20, pady=20
-        )
-
-    def test_completed(self, result):
-        self.last_result = result
-        self.show_results()
-
-    def show_results(self):
-        self.clear_frame()
-
-        self.current_frame.pack_forget()
-        self.current_frame = ResultsFrame(
-            self,
-            on_back=self.show_dashboard,
-            on_start=self.show_dashboard,
-            result=self.last_result
-        )
-        self.current_frame.pack(
-            fill="both", expand=True, padx=20, pady=20
-        )
+    def confirm_exit(self):
+        if messagebox.askyesno(
+            "Exit TypeFlow",
+            "Are you sure you want to exit?"
+        ):
+            self.destroy()
 
 
 if __name__ == "__main__":
-    create_tables()
     app = TypeFlowApp()
     app.mainloop()
