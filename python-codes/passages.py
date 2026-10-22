@@ -1,36 +1,36 @@
-
 import random
 
 PASSAGES = {
     "Easy": [
-        "Python is a popular programming language. It is simple to learn and useful for many projects.",
-        "Practice every day to improve your typing speed and accuracy. Small steps can lead to great results.",
-        "Learning new skills takes time. Stay patient, keep practicing, and celebrate your progress."
+        "Practice makes progress. Keep typing and try to improve every day.",
+        "Python is a useful programming language for beginners.",
+        "Small steps can lead to big improvements over time.",
+        "Learning to type faster takes patience and regular practice.",
+        "Stay focused and try to make fewer mistakes each time."
     ],
     "Medium": [
-        "Programming helps us solve problems by breaking complicated tasks into smaller and more manageable steps.",
-        "A good developer writes readable code, tests different situations, and learns from mistakes along the way.",
-        "Technology continues to change how people communicate, study, work, and share information with others."
+        "Programming requires patience, logical thinking, and consistent practice.",
+        "A good developer writes readable code and solves problems carefully.",
+        "Typing accurately is more important than typing quickly at first.",
+        "Building projects helps students understand programming concepts.",
+        "Technology continues to change the way people learn and work."
     ],
     "Hard": [
-        "Software development requires logical thinking, consistent practice, careful testing, and attention to detail.",
-        "Efficient programming combines readable code, appropriate data structures, reliable algorithms, and maintainable design.",
-        "Debugging is an essential skill because unexpected errors can reveal weaknesses in assumptions or implementation."
+        "Software development combines problem-solving, creativity, and technical knowledge.",
+        "Efficient programmers analyze problems before implementing a practical solution.",
+        "Consistency, accuracy, and concentration contribute to better typing performance.",
+        "Applications should be reliable, maintainable, and easy to understand.",
+        "Developing strong technical skills requires curiosity and continuous improvement."
     ]
 }
 
 
-def get_random_passage(difficulty="Easy"):
+def get_passage(difficulty="Easy"):
+    """Return a random passage for the selected difficulty."""
     passages = PASSAGES.get(difficulty, PASSAGES["Easy"])
     return random.choice(passages)
 
 
-def get_custom_passage(text):
-    return text.strip()
-
-
-def get_passage_for_mode(difficulty="Easy", custom_text=""):
-    if custom_text.strip():
-        return custom_text.strip()
-
-    return get_random_passage(difficulty)
+def get_all_passages():
+    """Return every passage organized by difficulty."""
+    return PASSAGES
