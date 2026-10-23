@@ -368,6 +368,107 @@ Potential future enhancements include:
 - Automated tests for typing calculations, timers, and database functions.
 - Improved accessibility and interface customization.
 
+---
+
+# TypeFlow — Web Edition
+
+TypeFlow also includes a browser-based version built with **HTML, CSS, and JavaScript**. The web edition lets users practice typing, track their performance, and review recent results directly in a web browser without installing Python packages.
+
+## Web Version Features
+
+### Typing Test
+
+- **Timed Challenges** — Choose between 30-second, 60-second, and 120-second tests.
+- **Difficulty Levels** — Practice with Easy, Medium, and Hard passages.
+- **Live WPM** — Monitor estimated words per minute while typing.
+- **Live Accuracy** — See the percentage of correctly typed characters.
+- **Mistake Tracking** — Count characters that do not match the displayed passage.
+- **Progress Bar** — Follow typing progress through the selected passage.
+- **Instant Results** — View final WPM, accuracy, mistakes, and characters typed after a test.
+- **Restart and Retry** — Reset the test or start another attempt.
+- **Character Highlighting** — See correct and incorrect characters highlighted as you type.
+
+### Web Dashboard and History
+
+- **Personal Best** — View the highest saved WPM.
+- **Average WPM** — Review average speed across saved tests.
+- **Average Accuracy** — Review average accuracy across completed tests.
+- **Total Tests** — Count completed typing sessions.
+- **Recent Test History** — Review recent scores, accuracy, mistakes, duration, and difficulty.
+- **Local Browser Storage** — Save test history and theme preferences using browser LocalStorage.
+- **Dark and Light Themes** — Switch between dark and light appearance.
+- **Responsive Layout** — Use the web interface on desktop and smaller screens.
+
+## Web Technologies Used
+
+| Technology | Purpose |
+|---|---|
+| HTML5 | Structures the web page and its controls |
+| CSS3 | Styles the interface and responsive layout |
+| JavaScript | Implements typing logic, timers, scoring, and dashboard updates |
+| LocalStorage | Stores test history and theme preference in the browser |
+| Google Fonts | Loads Inter and DM Mono typography when an internet connection is available |
+
+## Web Project Structure
+
+```text
+typeflow-web/
+├── index.html
+├── style.css
+└── script.js
+```
+
+### Web File Descriptions
+
+- `index.html` — Contains the typing test interface, settings, live statistics, results panel, dashboard, and recent history table.
+- `style.css` — Defines the dark/light themes, responsive layout, passage highlighting, statistic cards, and other visual styles.
+- `script.js` — Handles passage selection, typing input, countdown timer, WPM and accuracy calculations, results, browser storage, test history, and theme switching.
+
+## Running the Web Version
+
+1. Download or clone the repository containing the `typeflow-web` folder.
+2. Open the `typeflow-web` folder in Visual Studio Code or another code editor.
+3. Make sure `index.html`, `style.css`, and `script.js` are in the same folder.
+4. Open `index.html` in a web browser, or use the VS Code Live Server extension.
+
+The web edition runs in the browser and does not require Python, CustomTkinter, SQLite, or Matplotlib.
+
+## Web Version Data Storage
+
+The web edition uses browser LocalStorage rather than the desktop application's SQLite database.
+
+- Typing results are stored in the current browser.
+- The latest 100 completed test results are retained.
+- The dashboard displays the latest 10 results.
+- Theme preference is saved in the browser.
+- Data is not automatically shared or synchronized across browsers or devices.
+- Clearing browser site data may remove saved web results.
+
+**Note:** The desktop and web editions keep their data separately. Results saved in the Python application's SQLite database do not automatically appear in the web edition, and vice versa.
+
+## Web Version Notes and Limitations
+
+- The web edition uses a predefined collection of passages for each difficulty.
+- Each test uses one passage.
+- WPM is estimated from correctly typed characters, using five characters as one word.
+- The countdown begins when the user selects **Start Test**.
+- A test ends when the timer expires or the passage is completed.
+- Browser LocalStorage is local to the current browser profile and is not a cloud database.
+- Google Fonts requires an internet connection to load; fallback fonts are used if unavailable.
+- The web version does not currently include the desktop edition's SQLite history search, CSV export, achievements, daily goals, or pause/resume controls.
+
+## Publishing the Web Version
+
+The web edition can be hosted as a static website using **GitHub Pages**:
+
+1. Push the `typeflow-web` folder and its three files to your GitHub repository.
+2. Open the repository's **Settings**.
+3. Select **Pages**.
+4. Choose the branch and folder containing the web files.
+5. Save the settings and wait for GitHub Pages to publish the site.
+
+Check GitHub Pages' current instructions for the exact publishing options available for your repository.
+
 ## Author
 
 **Jose Navoa**
